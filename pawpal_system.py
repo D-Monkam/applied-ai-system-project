@@ -2,82 +2,76 @@ from dataclasses import dataclass, field
 from typing import List, Dict
 
 @dataclass
-class Pet:
-    """Represents a pet with its attributes and care needs."""
-    name: str
-    breed: str
-    age: int
-    diet: List[str] = field(default_factory=list)
-    medication: List[str] = field(default_factory=list)
-    satisfactoryLevel: float = 0.0
-
-    def add_to_diet(self, item: str):
-        """Adds a food item to the pet's diet."""
-        pass
-
-    def add_to_medication(self, item: str):
-        """Adds a medication to the pet's medication list."""
-        pass
-
-    def calculate_satisfaction(self) -> float:
-        """Calculates the pet's satisfaction level based on various factors."""
-        pass
-
-@dataclass
 class Task:
     """Represents a single care task for a pet."""
-    name: str
+    name: str  # Description of the task
     time: int  # Duration in minutes
-    priority: int
-    pet: "Pet"
-    owner_preferences: Dict[str, any] = field(default_factory=dict)
+    frequency: str # e.g., 'daily', 'weekly'
     is_completed: bool = False
 
     def mark_as_complete(self):
         """Marks the task as completed."""
-        pass
+        self.is_completed = True
 
     def edit_name(self, name: str):
         """Edits the name of the task."""
-        pass
+        self.name = name
 
-class Scheduler:
-    """Manages and organizes a list of tasks."""
-    def __init__(self, total_time: int):
-        self.tasks: List[Task] = []
-        self.total_time = total_time
+@dataclass
+class Pet:
+    """Represents a pet, its details, and its list of tasks."""
+    name: str
+    breed: str
+    age: int
+    tasks: List[Task] = field(default_factory=list)
+    diet: List[str] = field(default_factory=list)
+    medication: List[str] = field(default_factory=list)
+    satisfactoryLevel: float = 0.0
 
     def add_task(self, task: Task):
-        """Adds a task to the schedule."""
-        pass
+        """Adds a task to the pet's list of tasks."""
+        self.tasks.append(task)
 
-    def remove_task(self, task: Task):
-        """Removes a task from the schedule."""
-        pass
+    def add_to_diet(self, item: str):
+        """Adds a food item to the pet's diet."""
+        self.diet.append(item)
 
-    def edit_task(self, task: Task):
-        """Edits an existing task in the schedule."""
-        pass
+    def add_to_medication(self, item: str):
+        """Adds a medication to the pet's medication list."""
+        self.medication.append(item)
 
-    def mark_task_complete(self, task: Task):
-        """Marks a task in the schedule as complete."""
-        pass
-
-    def generate_plan(self) -> List[Task]:
-        """Sorts tasks and creates an optimized schedule."""
+    def calculate_satisfaction(self) -> float:
+        """Calculates the pet's satisfaction level based on various factors."""
+        # This logic will depend on completed tasks, etc.
         pass
 
 class Owner:
-    """Represents the pet owner."""
-    def __init__(self, name: str, schedule: Scheduler):
+    """Manages multiple pets and provides access to all their tasks."""
+    def __init__(self, name: str):
         self.name = name
         self.pets: List[Pet] = []
-        self.schedule = schedule
 
     def add_pet(self, pet: Pet):
         """Adds a pet to the owner's list of pets."""
-        pass
+        self.pets.append(pet)
 
-    def edit_schedule(self, schedule: Scheduler):
-        """Replaces the owner's current schedule with a new one."""
+    def get_all_tasks(self) -> List[Task]:
+        """Returns a single list of all tasks for all pets."""
+        all_tasks = []
+        for pet in self.pets:
+            all_tasks.extend(pet.tasks)
+        return all_tasks
+
+class Scheduler:
+    """The 'Brain' that retrieves, organizes, and manages tasks across pets."""
+    def __init__(self, owner: Owner):
+        self.owner = owner
+
+    def generate_plan(self, available_time: int) -> List[Task]:
+        """
+        Retrieves all tasks from the owner's pets, and creates an 
+        optimized schedule based on priority, time, and other constraints.
+        """
+        all_tasks = self.owner.get_all_tasks()
+        # Core scheduling logic will go here
         pass
