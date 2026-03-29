@@ -72,4 +72,7 @@ The test suite in `tests/test_pawpal.py` covers the following key functionalitie
 
 - **Confidence Level**: ⭐⭐⭐⭐ (4 out of 5)
 
+### 📸 Demo
+
+![alt text](image.png)
 
