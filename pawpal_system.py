@@ -90,33 +90,41 @@ class Scheduler:
     def __init__(self, owner: Owner):
         self.owner = owner
 
-    def generate_plan(self, available_time: int) -> List[Task]:
+    def get_conflicts(self) -> Dict[str, List[str]]:
         """
-        Generates a schedule of tasks that fits within the owner's available time
-        and prints a warning if multiple tasks are scheduled for the same time.
+        Checks for tasks scheduled at the same time and returns a dictionary of conflicts.
         """
         all_tasks = self.owner.get_all_tasks()
-        
-        # --- Conflict Detection for Same Start Time ---
         times_seen = {}
+        conflicts = {}
+
         for task in all_tasks:
             if not task.is_completed and task.time:
                 if task.time in times_seen:
-                    times_seen[task.time].append(task.name)
+                    # If we've seen it once, it's a conflict now
+                    if task.time not in conflicts:
+                        conflicts[task.time] = [times_seen[task.time]]
+                    conflicts[task.time].append(task.name)
                 else:
-                    times_seen[task.time] = [task.name]
-        
-        for time_str, tasks in times_seen.items():
-            if len(tasks) > 1:
-                task_list = ", ".join([f"'{task}'" for task in tasks])
-                print(
-                    f"Warning: Multiple tasks are scheduled for {time_str}: {task_list}"
-                )
-        # --- End of Conflict Detection ---
+                    times_seen[task.time] = task.name
+        return conflicts
 
-        # 1. Filter out completed tasks and sort by priority (higher first)
+    def generate_plan(self, available_time: int) -> List[Task]:
+        """
+        Generates a schedule of tasks that fits within the owner's available time.
+        """
+        all_tasks = self.owner.get_all_tasks()
+        
+        # 1. Filter out completed tasks
         uncompleted_tasks = [t for t in all_tasks if not t.is_completed]
-        sorted_tasks = sorted(uncompleted_tasks, key=lambda t: t.priority, reverse=True)
+
+        # Sort by priority (desc) and then by start time (asc)
+        def sort_key(task):
+            # Fallback for tasks without a specific time
+            start_time = datetime.strptime(task.time, "%H:%M").time() if task.time else datetime.min.time()
+            return (-task.priority, start_time)
+
+        sorted_tasks = sorted(uncompleted_tasks, key=sort_key)
         
         # 2. Build the plan within the available time
         plan = []

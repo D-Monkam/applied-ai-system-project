@@ -1,5 +1,6 @@
 import streamlit as st
-from pawpal_system import Owner, Pet, Task
+from pawpal_system import Owner, Pet, Task, Scheduler
+from datetime import datetime
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -74,23 +75,37 @@ st.markdown("### Add Tasks")
 st.caption("Add tasks for your selected pet.")
 
 if st.session_state.selected_pet:
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        task_title = st.text_input("Task title", value="Morning walk")
-    with col2:
-        hours = st.number_input("Hours", min_value=0, max_value=10, value=0)
-    with col3:
-        minutes = st.number_input("Minutes", min_value=0, max_value=59, value=20)
-    with col4:
-        priority_map = {"low": 1, "medium": 2, "high": 3}
-        priority_str = st.selectbox("Priority", ["low", "medium", "high"], index=2)
-        priority = priority_map[priority_str]
+    with st.form("new_task_form", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            task_title = st.text_input("Task title", value="Morning walk")
+            start_time_str = st.text_input("Start time (HH:MM)", value="08:00")
+            priority_map = {"low": 1, "medium": 2, "high": 3}
+            priority_str = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+        with c2:
+            duration_hours = st.number_input("Duration (hours)", min_value=0, max_value=10, value=0)
+            duration_minutes = st.number_input("Duration (minutes)", min_value=0, max_value=59, value=20)
+            frequency = st.selectbox("Frequency", ["daily", "weekly", "once"], index=0)
 
-    if st.button("Add task"):
-        duration_str = f"{int(hours):02d}:{int(minutes):02d}"
-        new_task = Task(name=task_title, time=duration_str, priority=priority, frequency="daily")
-        st.session_state.selected_pet.add_task(new_task)
-        st.success(f"Added task '{task_title}' for {st.session_state.selected_pet.name}.")
+        submitted = st.form_submit_button("Add Task")
+        if submitted:
+            try:
+                # Validate time format
+                datetime.strptime(start_time_str, "%H:%M")
+                duration_str = f"{int(duration_hours):02d}:{int(duration_minutes):02d}"
+                priority = priority_map[priority_str]
+
+                new_task = Task(
+                    name=task_title,
+                    duration=duration_str,
+                    time=start_time_str,
+                    priority=priority,
+                    frequency=frequency,
+                )
+                st.session_state.selected_pet.add_task(new_task)
+                st.success(f"Added task '{task_title}' for {st.session_state.selected_pet.name}.")
+            except ValueError:
+                st.error("Invalid time format. Please use HH:MM.")
 else:
     st.warning("Please add and select a pet to manage its tasks.")
 
@@ -98,11 +113,41 @@ else:
 # Display tasks for the selected pet
 if st.session_state.get("selected_pet") and st.session_state.selected_pet.tasks:
     st.write(f"Current tasks for {st.session_state.selected_pet.name}:")
-    task_data = [
-        {"Task": task.name, "Duration (min)": task.time, "Priority": task.priority}
-        for task in st.session_state.selected_pet.tasks
-    ]
-    st.table(task_data)
+    
+    # Create a scheduler instance to use its methods
+    scheduler = Scheduler(st.session_state.owner)
+
+    # --- Filtering and Sorting ---
+    st.markdown("#### View and Organize Tasks")
+    sort_option = st.selectbox("Sort tasks by:", ["Priority", "Start Time", "Duration"])
+    
+    tasks_to_display = st.session_state.selected_pet.tasks
+    
+    if sort_option == "Start Time":
+        tasks_to_display = sorted(tasks_to_display, key=lambda t: datetime.strptime(t.time, "%H:%M").time())
+    elif sort_option == "Duration":
+        tasks_to_display = sorted(tasks_to_display, key=lambda t: t.duration_in_minutes)
+    else: # Default to priority
+        tasks_to_display = sorted(tasks_to_display, key=lambda t: t.priority, reverse=True)
+
+    # --- Interactive Task List ---
+    if not tasks_to_display:
+        st.info("No tasks to display based on current filters.")
+    else:
+        for i, task in enumerate(tasks_to_display):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                status = "✅" if task.is_completed else "❌"
+                st.write(f"**{task.name}** ({task.duration}) - Priority: {task.priority} {status}")
+                st.caption(f"Starts at {task.time} - Due: {task.due_date.strftime('%Y-%m-%d')}")
+            with col2:
+                # Disable button if task is already complete
+                if st.button("Complete", key=f"complete_{i}_{task.name}", disabled=task.is_completed):
+                    scheduler.complete_task(task)
+                    st.success(f"Completed task: '{task.name}'!")
+                    st.rerun() # Rerun to update the UI immediately
+            st.divider()
+
 else:
     st.info("No tasks added for the selected pet yet.")
 
@@ -117,12 +162,21 @@ available_time = st.slider(
 if st.button("Generate schedule"):
     if st.session_state.owner.pets:
         scheduler = Scheduler(st.session_state.owner)
+        
+        # --- Conflict Warning ---
+        conflicts = scheduler.get_conflicts()
+        if conflicts:
+            with st.warning("Scheduling Conflict Detected!"):
+                for time_str, tasks in conflicts.items():
+                    task_list = ", ".join([f"'{task}'" for task in tasks])
+                    st.write(f"**At {time_str}:** The following tasks are scheduled at the same time: {task_list}")
+        
         plan = scheduler.generate_plan(available_time)
 
         if plan:
             st.success("Here is your generated pet care plan for the day!")
             st.markdown("### Today's Plan")
-            total_duration = sum(task.time for task in plan)
+            total_duration = sum(task.duration_in_minutes for task in plan)
             
             schedule_data = []
             for task in plan:
@@ -135,7 +189,8 @@ if st.button("Generate schedule"):
                 schedule_data.append({
                     "Pet": pet_owner,
                     "Task": task.name,
-                    "Duration (min)": task.time,
+                    "Start Time": task.time,
+                    "Duration": task.duration,
                     "Priority": task.priority,
                 })
             

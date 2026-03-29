@@ -2,15 +2,21 @@
 
 ## 1. System Design
 
+- User should be able to add a pet, add tasks, and be able to properly view all tasks added.
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+- My inital UML design was to have the Owner class have a Schedule class that holds all the tasks as well as an attribute to hold available time throughout a day and methods to assingn tasks accordingly. Each task has an attribute that has it set to completed or not based on if that task has been checked off as complete with the accompaning method. The Pet class keeps track of all the pets currently in the system as well as their dietary and medication needs.
+
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+
+- Yes, Copilot pointed out there wasn't a clear relationship between the Pet class and the Task Class. If kept this way going forward implemnting an algorithm pertaining to prioritzaion in the scheduler would add levels of unecssary complexity.
 
 ---
 
@@ -21,10 +27,14 @@
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+- My scheduler consider time an priority. Time is a given since as a scheduler the time when tasks should start is important for a user to be constantly aware of. As for priority there will always be measure of importance that needs to be considered and giving them the ability to assing priority helps them consider such implications
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
+
+- Scheduler does not take into account the duration of tasks. At most checking if there is an exact time overlap. This reasoanble in this scenario because the processing time it would take to calc all the overlap of times will be in poly which I don't want. I want most of the functions  to be in linear if possible.
 
 ---
 
