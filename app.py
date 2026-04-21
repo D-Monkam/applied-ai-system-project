@@ -1,7 +1,11 @@
 import streamlit as st
-from pawpal_system import Owner, Pet, Task, Scheduler
+from pawpal_system import Owner, Pet, Task, Scheduler 
+from pet_care_advisor import PetCareAdvisor # NEW IMPORT
+import os
 from datetime import datetime
+from dotenv import load_dotenv # NEW IMPORT
 
+load_dotenv()
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
 st.title("🐾 PawPal+")
@@ -48,6 +52,24 @@ if "owner" not in st.session_state:
     st.session_state.owner = Owner(owner_name)
 else:
     st.session_state.owner.name = owner_name
+
+# --- AI Advisor Initialization ---
+# Use st.cache_resource to load the model only once
+@st.cache_resource
+def get_advisor(_owner):
+    # Check if the knowledge base directory exists
+    kb_path = "knowledge_base"
+    if not os.path.exists(kb_path):
+        # Create the directory if it doesn't exist
+        os.makedirs(kb_path)
+        # You might want to inform the user to add documents
+        st.warning(f"Created an empty '{kb_path}' directory. Add .txt files with pet care info to it for the advisor to work.")
+    
+    # Pass the owner object to the advisor
+    return PetCareAdvisor(knowledge_base_path=kb_path, owner=_owner)
+
+# Get the advisor instance, now with access to the owner's pets
+advisor = get_advisor(st.session_state.owner)
 
 # --- Pet Management ---
 st.markdown("### Your Pets")
@@ -203,3 +225,25 @@ if st.button("Generate schedule"):
             )
     else:
         st.error("Please add at least one pet before generating a schedule.")
+st.divider()
+
+# --- AI Pet Care Advisor ---
+st.subheader("🤖 Ask the PawPal Advisor")
+st.caption("Ask a question about pet care. If you mention your pet's name, the advisor will use their details in its answer!")
+
+question = st.text_input("Your question", placeholder="e.g., How can I keep my cat Mochi entertained?")
+
+if st.button("Get Advice"):
+    if question:
+        with st.spinner("The PawPal Advisor is thinking..."):
+            result = advisor.ask(question)
+            
+            if "error" in result:
+                st.error(result["error"])
+            else:
+                st.markdown(result["answer"])
+                if result.get("source_documents"):
+                    sources = ", ".join(result["source_documents"])
+                    st.info(f"💡 This answer was informed by the following documents: {sources}")
+    else:
+        st.warning("Please enter a question.")
