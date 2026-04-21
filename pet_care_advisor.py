@@ -3,6 +3,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import Dict, List
 # We need to import the Owner class definition from the other file
 from pawpal_system import Owner
+# NEW IMPORTS for TF-IDF
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 class PetCareAdvisor:
     """
@@ -14,49 +18,79 @@ class PetCareAdvisor:
         self.knowledge_base_path = knowledge_base_path
         self.owner = owner
         # Initialize the Gemini model
-        # This requires the GOOGLE_API_KEY environment variable to be set
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
+        
+        # Load documents first
         self.knowledge_docs = self._load_knowledge()
 
+        # --- NEW: Setup TF-IDF Vectorizer ---
+        self.vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+        if self.knowledge_docs:
+            # Create a list of document contents and corresponding filenames
+            self.doc_contents = list(self.knowledge_docs.values())
+            self.doc_filenames = list(self.knowledge_docs.keys())
+            # Fit the vectorizer on our document collection
+            self.tfidf_matrix = self.vectorizer.fit_transform(self.doc_contents)
+        else:
+            self.doc_contents = []
+            self.doc_filenames = []
+            self.tfidf_matrix = None
+
     def _load_knowledge(self) -> Dict[str, str]:
-        """Loads the content of all .txt files in the knowledge base."""
+        """Loads the content of all .txt files from all knowledge base paths."""
         docs = {}
-        if not os.path.exists(self.knowledge_base_path):
-            os.makedirs(self.knowledge_base_path)
+        # The knowledge_base_path can now be a list of paths
+        paths = self.knowledge_base_path if isinstance(self.knowledge_base_path, list) else [self.knowledge_base_path]
         
-        for filename in os.listdir(self.knowledge_base_path):
-            if filename.endswith(".txt"):
-                filepath = os.path.join(self.knowledge_base_path, filename)
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    docs[filename] = f.read()
+        for path in paths:
+            if not os.path.exists(path):
+                os.makedirs(path)
+            
+            for filename in os.listdir(path):
+                if filename.endswith(".txt"):
+                    filepath = os.path.join(path, filename)
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        docs[filename] = f.read()
         return docs
 
     def _retrieve_context(self, question: str) -> (str, List[str]):
         """
-        Retrieves context from the knowledge base using keyword matching
+        Retrieves context from the knowledge base using TF-IDF similarity
         and injects pet-specific information.
         """
         question_lower = question.lower()
         retrieved_texts = []
         source_files = []
 
-        # 1. Keyword-based retrieval from knowledge base
-        for filename, content in self.knowledge_docs.items():
-            if any(word in content.lower() for word in question_lower.split()):
-                retrieved_texts.append(content)
-                source_files.append(filename)
+        # --- NEW: TF-IDF based retrieval ---
+        if self.tfidf_matrix is not None and self.doc_contents:
+            # Transform the user's question into a TF-IDF vector
+            question_vector = self.vectorizer.transform([question_lower])
+            
+            # Calculate the cosine similarity between the question and all documents
+            cosine_similarities = cosine_similarity(question_vector, self.tfidf_matrix).flatten()
+            
+            # Get the indices of the top 2 most relevant documents
+            # We use argpartition to be efficient, getting the top 2 without a full sort
+            top_doc_indices = np.argpartition(cosine_similarities, -2)[-2:]
+            
+            # Add the most relevant documents to the context if their score is > 0
+            for i in top_doc_indices:
+                if cosine_similarities[i] > 0.0: # Only include if there's some relevance
+                    retrieved_texts.append(self.doc_contents[i])
+                    source_files.append(self.doc_filenames[i])
 
-        # 2. Pet-specific context injection
+        # 2. Pet-specific context injection (remains the same)
         for pet in self.owner.pets:
-            if pet.name.lower() in question_lower:
+            if f" {pet.name.lower()} " in f" {question_lower} ":
                 pet_info = (
                     f"Here is information about the pet being discussed: "
-                    f"Name: {pet.name}, Breed: {pet.breed}, Age: {pet.age}."
+                    f"Name: {pet.name}, Breed: {pet.breed}, Age: {pet.age}. "
+                    f"Additional Info: {pet.general_info}"
                 )
                 retrieved_texts.insert(0, pet_info)
 
         return "\n---\n".join(retrieved_texts), list(set(source_files))
-
     def ask(self, question: str) -> Dict:
         """
         Asks a question, retrieves context, and generates an answer using the Gemini LLM.
@@ -72,7 +106,9 @@ class PetCareAdvisor:
         else:
             final_prompt = (
                 "You are a helpful pet care assistant. Use the following context to answer the question. "
-                "If the context doesn't contain the answer, say you don't have enough information.\n\n"
+                "If the context doesn't contain the answer, say you don't have enough information."
+                "The context may include documents from a knowledge base and specific information about a pet. "
+                "Synthesize this information to provide a comprehensive answer even if a direct answer is not available. \n\n"
                 "--- CONTEXT ---\n"
                 f"{context}\n"
                 "--- END CONTEXT ---\n\n"

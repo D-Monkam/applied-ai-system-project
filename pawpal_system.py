@@ -41,29 +41,14 @@ class Pet:
     name: str
     breed: str
     age: int
+    general_info: str = ""
     tasks: List[Task] = field(default_factory=list)
-    diet: List[str] = field(default_factory=list)
-    medication: List[str] = field(default_factory=list)
     satisfactoryLevel: float = 0.0
 
     def add_task(self, task: Task):
         """Adds a new task to this pet's task list."""
         self.tasks.append(task)
 
-    def add_to_diet(self, item: str):
-        """Adds a new food item to this pet's diet."""
-        self.diet.append(item)
-
-    def add_to_medication(self, item: str):
-        """Adds a new medication to this pet's medication list."""
-        self.medication.append(item)
-
-    def calculate_satisfaction(self) -> float:
-        """Calculates this pet's satisfaction level based on completed tasks."""
-        completed_tasks = [task for task in self.tasks if task.is_completed]
-        if not self.tasks:
-            return 100.0  # No tasks, so pet is satisfied
-        
         satisfaction = (len(completed_tasks) / len(self.tasks)) * 100
         self.satisfactoryLevel = satisfaction
         return self.satisfactoryLevel

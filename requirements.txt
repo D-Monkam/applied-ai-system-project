@@ -6,3 +6,4 @@ langchain-google-genai
 faiss-cpu
 gpt4all
 python-dotenv
+scikit-learn
