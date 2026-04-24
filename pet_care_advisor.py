@@ -105,17 +105,17 @@ class PetCareAdvisor:
             )
         else:
             final_prompt = (
-                "You are a helpful pet care assistant. Use the following context to answer the question. "
-                "If the context doesn't contain the answer, say you don't have enough information."
-                "The context may include documents from a knowledge base and specific information about a pet. "
-                "Synthesize this information to provide a comprehensive answer even if a direct answer is not available. \n\n"
+                "You are a friendly and knowledgeable pet care expert. Your goal is to provide a helpful, conversational answer to the user's question. "
+                "Use the information from the 'CONTEXT' section below to form your answer. "
+                "Do not simply copy the text. Instead, synthesize the key points and present them in a natural, easy-to-understand way. "
+                "Address the user and their pet directly if their names are known.\n\n"
+                "If the context does not contain the answer, state that you don't have specific information on that topic and recommend consulting a veterinarian or uploading a relevant file.\n\n"
                 "--- CONTEXT ---\n"
                 f"{context}\n"
                 "--- END CONTEXT ---\n\n"
                 f"Question: {question}\n"
                 "Answer:"
             )
-        
         try:
             # Use .invoke() for the chat model
             response = self.llm.invoke(final_prompt)
