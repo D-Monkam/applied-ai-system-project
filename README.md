@@ -113,3 +113,7 @@ I learned that proper AI integration is a core part of system design. From tunin
 This project taught me that using AI competently is a skill in itself. You can't just ask a question and expect a coherent answer; it's necessary to always provide context in some manner. The problem I solved with this in mind was how to properly fine-tune prompts so that the AI's interaction with the given context is meaningful.
 
 In general, this project reinforced the value of an incremental approach to problem-solving. By breaking the system down into parts and solving each part individually, I was able to move closer and closer to the final goal.
+
+### Walkthrough
+
+[Video Walkthrough](https://www.loom.com/share/fbb4945855ce4b7ab2b4e3de43d91510)
