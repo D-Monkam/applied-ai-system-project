@@ -1,12 +1,12 @@
-# PawPal+ AI Pet Care Advisor
+# PetCare AI
 
-### Original Project: PawPal+ Task Scheduler
+### Original Project: PawPal+
 
-The original PawPal project was a task management system designed to help pet owners organize and schedule care-related activities for their pets. It allowed users to define tasks with specific attributes like duration, priority, and frequency, and then used a scheduler to generate a daily plan, identify conflicts, and manage recurring tasks.
+The original PawPal+ project was a task management system designed to help pet owners organize and schedule care-related activities for their pets. It allowed users to define tasks with specific attributes like duration, priority, and frequency, and then used a scheduler to generate a daily plan, identify conflicts, and manage recurring tasks.
 
 ### Summary
 
-The PawPal+ AI Care Advisor is a platform where you can ask any question about your pet, from how to make them happier to getting advice on a specific issue they're facing. If the advisor's answer isn't quite right, you can expand its knowledge by uploading your own documents. This is especially useful if your pet isn't a dog or cat, as the system's core knowledge is focused on them.
+The PetCare AI  is a platform where you can ask any question about your pet, from how to make them happier to getting advice on a specific issue they're facing. If the advisor's answer isn't quite right, you can expand its knowledge by uploading your own documents. This is especially useful if your pet isn't a dog or cat, as the system's core knowledge is focused on them.
 
 What makes this platform important is that it acts as a one-stop shop for pet care advice, saving you from endless Google searches and trying to piece together information from different websites. You can provide details about your specific pet and upload relevant files; the system then uses all this information to find the most relevant context and form an answer based on its combined knowledge. For example, as a dog owner, I can ask what I should do to improve my dog's wellness, and the system will tailor its advice using my dog's info and the knowledge base.
 
@@ -90,6 +90,12 @@ The system is designed around a **Retrieval-Augmented Generation (RAG)** archite
 *   **Trade-off**: This choice introduces a dependency on an external API and requires an internet connection and a valid API key.
 
 ### Testing Summary
+
+The system was evaluated using a combination of manual, interactive testing via the Streamlit UI and an automated script (`tests/evaluate.py`) that provides an objective measure of performance.
+
+**How the Evaluator Works**
+
+The evaluation script (`tests/evaluate.py`) operates on a "golden set" of predefined test cases. Each case includes a question, optional pet context, a list of expected keywords, and a pass threshold (e.g., 80%). For each test, the script calls the AI advisor and scores the response based on the percentage of expected keywords it contains. If the score meets or exceeds the threshold, the test passes. This provides a consistent and objective way to measure the impact of any changes to the prompt or retrieval logic.
 
 **What Worked**
 *   **Personalized Context Injection**: The mechanism for injecting the specific pet's details (name, age, breed, and general info) into the prompt worked reliably. This was a key success, as it allowed the advisor to provide personalized advice that directly referenced the user's pet, making the responses much more useful and engaging.

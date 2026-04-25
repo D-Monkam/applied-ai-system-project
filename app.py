@@ -5,20 +5,20 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="PetCare AI", page_icon="🐾", layout="centered")
 
-st.title("🐾 PawPal+")
+st.title("🐾 PetCare AI")
 
 st.markdown(
     """
-Welcome to PawPal+, your AI-powered pet care advisor.
+Welcome to PetCareAI, your AI-powered pet care advisor.
 """
 )
 
 with st.expander("Scenario", expanded=True):
     st.markdown(
         """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
+**PetCare AI** is a pet care planning assistant. It helps a pet owner plan care tasks
 for their pet(s) based on constraints like time, priority, and preferences.
 
 You will design and implement the scheduling logic and connect it to this Streamlit UI.
@@ -65,7 +65,7 @@ with st.form("add_pet_form"):
     if submitted and pet_name:
         new_pet = Pet(name=pet_name, breed=species, age=age, general_info=general_info)
         st.session_state.owner.add_pet(new_pet)
-        st.success(f"Added {pet_name} to your PawPal family!")
+        st.success(f"Added {pet_name} to your family!")
         st.rerun()
 
 if st.session_state.owner.pets:
@@ -110,14 +110,14 @@ if st.button("Reload Advisor with New Knowledge"):
 st.divider()
 
 # --- AI Pet Care Advisor ---
-st.subheader("🤖 Ask the PawPal Advisor")
+st.subheader("🤖 Ask the PetCare Advisor")
 st.caption("Ask a question about pet care. If you mention your pet's name, the advisor will use their details in its answer!")
 
 question = st.text_input("Your question", placeholder="e.g., How can I keep my cat Mochi entertained?")
 
 if st.button("Get Advice"):
     if question:
-        with st.spinner("The PawPal Advisor is thinking..."):
+        with st.spinner("The PetCare Advisor is thinking..."):
             result = advisor.ask(question)
             
             if "error" in result:
